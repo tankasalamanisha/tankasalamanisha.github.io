@@ -1,70 +1,39 @@
-document.getElementById("username-form").addEventListener("submit", function(event) {
-    event.preventDefault(); // Prevent form submission
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the form element
+    const form = document.getElementById('repo-form');
   
-    const username = document.getElementById("username").value;
-    const url = `https://api.github.com/users/${username}/repos`;
+    // Add event listener for form submission
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
   
-    fetch(url)
+      // Get the input value
+      const username = document.getElementById('username').value;
+  
+      // Create the request body
+      const requestBody = {
+        username: username
+      };
+  
+      // Send a POST request to the Flask API endpoint
+      fetch('/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBody)
+      })
       .then(response => response.json())
-      .then(repos => {
-        if (repos.length > 0) {
-          const complexityScores = {};
-  
-          for (const repo of repos) {
-            const repoName = repo.name;
-            const repoUrl = `https://api.github.com/repos/${username}/${repoName}/contents`;
-  
-            fetch(repoUrl)
-              .then(response => response.json())
-              .then(files => {
-                let totalComplexity = 0;
-  
-                for (const file of files) {
-                  if (file.type === "file" && file.name.endsWith(".py")) {
-                    fetch(file.download_url)
-                      .then(response => response.text())
-                      .then(fileContent => {
-                        try {
-                          const parsedAst = ast.parse(fileContent);
-                          const fileComplexity = radon_metrics.cc_visit(parsedAst);
-                          const fileTotalComplexity = fileComplexity.reduce((sum, complexity) => sum + complexity.complexity, 0);
-                          totalComplexity += fileTotalComplexity;
-                        } catch (error) {
-                          console.error(`Failed to parse file ${file.name} in repository ${repoName}.`, error);
-                        }
-                      })
-                      .catch(error => {
-                        console.error(`Failed to fetch file ${file.name} in repository ${repoName}.`, error);
-                      });
-                  }
-                }
-  
-                complexityScores[repoName] = totalComplexity;
-              })
-              .catch(error => {
-                console.error(`Failed to fetch repository ${repoName}.`, error);
-              });
-          }
-  
-          setTimeout(() => {
-            if (Object.keys(complexityScores).length > 0) {
-              const mostComplexRepo = Object.keys(complexityScores).reduce((a, b) => complexityScores[a] > complexityScores[b] ? a : b);
-              const complexityScore = complexityScores[mostComplexRepo];
-  
-              document.getElementById("repo-name").textContent = mostComplexRepo;
-              document.getElementById("complexity-score").textContent = `Complexity Score: ${complexityScore}`;
-  
-              document.getElementById("result").style.display = "block";
-            } else {
-              console.log(`No repositories found for user ${username}.`);
-            }
-          }, 5000); // Wait for all requests to complete before displaying result
-        } else {
-          console.log(`No repositories found for user ${username}.`);
-        }
+      .then(data => {
+        // Display the result on the webpage
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.innerHTML = `
+          <h3>Most Complex Repository:</h3>
+          <p>Name: ${data.most_complex_repo}</p>
+          <p>Complexity Score: ${data.complexity_score}</p>
+        `;
       })
       .catch(error => {
-        console.error(`Failed to fetch repositories for user ${username}.`, error);
+        console.error('Error:', error);
       });
-  });
-  
+    });
+  });  
