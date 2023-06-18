@@ -1,22 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Github Repository Complexity</title>
+  <title>GitHub Repository Complexity Analyzer</title>
 </head>
 <body>
-  <h1>Github Repository Complexity</h1>
+  <h1>GitHub Repository Complexity Analyzer</h1>
   <form id="username-form">
-    <label for="username">Enter Github Username:</label>
-    <input type="text" id="username" required>
-    <button type="submit">Submit</button>
+    <label for="username">GitHub Username:</label>
+    <input type="text" id="username" name="username" required>
+    <button type="submit">Analyze</button>
   </form>
 
-  <div id="result" style="display: none;">
-    <h2>Most Complex Repository:</h2>
-    <p id="repo-name"></p>
+  <div id="result-container" style="display: none;">
+    <h2>Result</h2>
+    <p id="most-complex-repo"></p>
     <p id="complexity-score"></p>
   </div>
 
-  <script src="script.js"></script>
+  <script>
+    const form = document.getElementById('username-form');
+    const resultContainer = document.getElementById('result-container');
+    const mostComplexRepo = document.getElementById('most-complex-repo');
+    const complexityScore = document.getElementById('complexity-score');
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const url = 'https://tankasalamanisha.github.io';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: username }),
+      })
+        .then(response => response.json())
+        .then(data => {
+          mostComplexRepo.textContent = `Most Complex Repository: ${data.most_complex_repo}`;
+          complexityScore.textContent = `Complexity Score: ${data.complexity_score}`;
+          resultContainer.style.display = 'block';
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          resultContainer.style.display = 'none';
+        });
+    });
+  </script>
 </body>
 </html>

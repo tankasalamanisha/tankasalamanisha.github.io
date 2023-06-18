@@ -1,23 +1,27 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, jsonify
 import requests
 import ast
 from radon.complexity import cc_visit
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        repository_names = fetch_github_repos(username)
+@app.route('/analyze', methods=['POST'])
+def analyze_complexity():
+    # Get the GitHub username from the request
+    username = request.json.get('username')
 
-        if repository_names:
-            most_complex_repo, complexity_score = calculate_complexity(username, repository_names)
-            return f"The most complex repository for user '{username}' is '{most_complex_repo}' with a complexity score of {complexity_score}."
-        else:
-            return f"No repositories found for user {username}."
+    # Fetch the repositories for the given username
+    repository_names = fetch_github_repos(username)
 
-    return render_template('index.html')
+    if repository_names:
+        most_complex_repo, complexity_score = calculate_complexity(username, repository_names)
+        result = {
+            'most_complex_repo': most_complex_repo,
+            'complexity_score': complexity_score
+        }
+        return jsonify(result)
+    else:
+        return jsonify({'error': 'No repositories found for the given username'})
 
 def fetch_github_repos(username):
     url = f"https://api.github.com/users/{username}/repos"
@@ -28,7 +32,6 @@ def fetch_github_repos(username):
         repo_names = [repo["name"] for repo in repos]
         return repo_names
     else:
-        print(f"Failed to fetch repositories for user {username}. Error: {response.status_code}")
         return []
 
 def calculate_complexity(username, repository_names):
@@ -52,12 +55,9 @@ def calculate_complexity(username, repository_names):
                         file_total_complexity = sum([complexity.complexity for complexity in file_complexity])
                         total_complexity += file_total_complexity
                     except SyntaxError:
-                        print(f"Failed to parse file {file['name']} in repository {repo_name}.")
                         continue
 
             complexity_scores[repo_name] = total_complexity
-        else:
-            print(f"Failed to fetch repository {repo_name}. Error: {response.status_code}")
 
     if complexity_scores:
         most_complex_repo = max(complexity_scores, key=complexity_scores.get)
