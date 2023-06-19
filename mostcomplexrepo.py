@@ -66,4 +66,4 @@ def calculate_complexity(username, repository_names):
         return None
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', 'http://127.0.0.1:5000')
+    app.run()
