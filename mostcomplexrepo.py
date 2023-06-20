@@ -5,7 +5,7 @@ from radon.complexity import cc_visit
 
 app = Flask(__name__)
 
-@app.route('/analyze', methods=['POST'])
+@app.route('/', methods=['POST'])
 def analyze_complexity():
     # Get the GitHub username from the request
     username = request.json.get('username')
